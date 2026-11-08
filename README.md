@@ -1,8 +1,8 @@
 <div align="center">
 
-# Lako Invite Scanner
+# Noxo Invite Scanner
 
-**Scrape invite codes từ Disboard → xác thực qua Discord API → thu về đúng N invite hợp lệ, gửi 1 file codes qua webhook.**
+**Scrape invite codes from Disboard → verify against the Discord API → collect exactly N valid invites, delivered as a single codes file via webhook.**
 
 ![version](https://img.shields.io/badge/version-2.0.0-8B5CF6)
 ![python](https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white)
@@ -40,40 +40,40 @@ kGVpPjKNN2
 WSEcV65JVb
 ```
 
-> Output thật từ một run trên Windows 11 · Python 3.11.6 · kết nối trực tiếp (không Tor). Webhook Discord nhận đúng 1 tin nhắn kèm file `valid_invites.txt` chứa 3 codes.
+> Real output from a run on Windows 11 · Python 3.11.6 · direct connection (no Tor). The Discord webhook receives exactly one message with a `valid_invites.txt` file containing the 3 codes. *(The console prints a few Vietnamese words — e.g. `Hoàn tất!` means "Done".)*
 
 ---
 
-## Mục đích & Tính năng
+## Purpose & Features
 
-Tool thu thập invite Discord còn sống từ Disboard.org. Điểm khác biệt: **từ tháng 11/2026, Disboard yêu cầu giải Turnstile riêng cho từng server** (`POST /site/get-invite` trả `400 "Human verification failed"` nếu thiếu token) — mọi scraper dùng curl/requests thuần đều chết ở bước này. Tool dùng **JoinBrowser**: mở trang `/server/join/{id}` bằng Chromium khó-nhận-biết (patchright), để trang tự giải Turnstile của nó, rồi chặn và bắt URL redirect `discord.gg/{code}`.
+The tool collects live Discord invites from Disboard.org. The key differentiator: **as of November 2026, Disboard requires solving a Turnstile challenge per server** (`POST /site/get-invite` returns `400 "Human verification failed"` without a token) — plain curl/requests scrapers all die at this step. This tool uses a **JoinBrowser**: it opens `/server/join/{id}` in stealth Chromium (patchright), lets the page solve its own Turnstile, then intercepts and captures the `discord.gg/{code}` redirect.
 
-| Tính năng | Bằng chứng trong code |
+| Feature | Evidence in code |
 |---|---|
-| **Quota chính xác** — hỏi "cần bao nhiêu invite?", dừng đúng N, tự scrape thêm vòng mới nếu thiếu (tối đa 3 vòng) | `run_pipeline()` với `round_target = target − total_valid` |
-| **Bypass Turnstile per-server** — click widget khi không tự giải, retry 2 lần, xoay browser context khi bị CF đánh dấu | `JoinBrowser` class, `src/scraper.py` |
-| **Checker async** — aiohttp, tối đa 50 workers, retry theo `Retry-After` của Discord | `check_invite()`, `main.py` |
-| **Dedup theo guild ID xuyên các lần chạy** — không bao giờ thu lại server đã có | `checked_guild_ids.json` (2.461 guilds đã ghi nhận) |
-| **Queue thông minh** — code lỗi mạng ở lại để retry, code đã check bị tiêu thụ | `data/input/invites.txt` |
-| **Tor proxy pool** (12 tunnel, binary 0.4.9.15 đi kèm) + `proxy.txt` (http/socks4/socks5, có auth) | `tor_manager.py`, `collect_proxies()` |
-| **Output tối giản** — chỉ invite codes, 1 code/dòng, tự dedup khi ghi | `data/output/valid_invites.txt` |
-| **30 unit tests** (stdlib unittest, không cần mạng) | `tests/` |
+| **Exact quota** — asks "how many invites?", stops at exactly N, auto-scrapes more rounds if short (max 3) | `run_pipeline()` with `round_target = target − total_valid` |
+| **Per-server Turnstile bypass** — clicks the widget when it doesn't auto-solve, retries twice, rotates the browser context when Cloudflare flags it | `JoinBrowser` class, `src/scraper.py` |
+| **Async checker** — aiohttp, up to 50 workers, honors Discord's `Retry-After` | `check_invite()`, `main.py` |
+| **Cross-run guild dedup** — never collects the same server twice | `checked_guild_ids.json` (2,461 guilds recorded) |
+| **Smart queue** — network-error codes stay for retry, checked codes are consumed | `data/input/invites.txt` |
+| **Tor proxy pool** (12 tunnels, bundled 0.4.9.15 binary) + `proxy.txt` (http/socks4/socks5, auth supported) | `tor_manager.py`, `collect_proxies()` |
+| **Minimal output** — invite codes only, one per line, deduplicated on write | `data/output/valid_invites.txt` |
+| **30 unit tests** (stdlib unittest, no network) | `tests/` |
 
-Tốc độ đo được: **~4 codes/phút** khi scrape qua browser join flow · **110 CPM** khi check qua Discord API.
+Measured speed: **~4 codes/min** scraping through the browser join flow · **110 CPM** checking via the Discord API.
 
 ---
 
 ## Disclaimer & Security
 
-- Tool mang tính **giáo dục/nghiên cứu**. Scrape Disboard và tự động hoá Discord **có thể vi phạm TOS** của hai nền tảng — rủi ro **khóa tài khoản/IP là của bạn**. Tác giả **không chịu trách nhiệm** cho bất kỳ thiệt hại nào.
-- **TUYỆT ĐỐI không chia sẻ** token / cookie / password / webhook URL của bạn cho bất kỳ ai.
-- `config.json` chứa webhook URL (là secret!). `.gitignore` đã chặn `config.json`, `data/` và `.env` — nhưng **luôn kiểm tra lại** trước khi push. Nếu bạn đã lỡ commit `config.json` ở đâu đó, hãy **rotate webhook** ngay (Discord → Server Settings → Integrations → Webhooks).
+- This tool is for **educational/research purposes**. Scraping Disboard and automating Discord **may violate the TOS** of both platforms — the risk of **account/IP bans is yours**. The author **accepts no liability** for any damage.
+- **NEVER share** your tokens / cookies / passwords / webhook URLs with anyone.
+- `config.json` contains your webhook URL (a secret!). `.gitignore` already blocks `config.json`, `data/` and `.env` — but **always double-check before pushing**. If you ever committed `config.json` somewhere, **rotate the webhook immediately** (Discord → Server Settings → Integrations → Webhooks).
 
 ---
 
 ## Quick Start
 
-**Yêu cầu:** Python 3.10+ (test trên 3.11.6) · Windows · **Google Chrome đã cài** (tool mở Chrome thật để giải Turnstile — cần màn hình, không chạy headless trên VPS).
+**Requirements:** Python 3.10+ (tested on 3.11.6) · Windows · **Google Chrome installed** (the tool opens a real Chrome window to solve Turnstile — a display is required; it won't run headless on a VPS).
 
 ```bash
 git clone <repo-url>
@@ -81,7 +81,7 @@ cd invite-gen-check
 pip install -r requirements.txt
 ```
 
-**Cấu hình `config.json`** (tự tạo với giá trị mặc định ở lần chạy đầu):
+**`config.json`** (auto-created with default values on first run):
 
 ```json
 {
@@ -92,36 +92,35 @@ pip install -r requirements.txt
 }
 ```
 
-- `webhook.url` để trống = tắt webhook (kết quả vẫn lưu file local)
-- Cho proxy vào `data/input/proxy.txt` (1 dòng/proxy, `#` = comment)
+- Leave `webhook.url` empty to disable the webhook (results are still saved locally)
+- Put proxies in `data/input/proxy.txt` (one per line, `#` = comment)
 
-**Chạy:**
+**Run:**
 
 ```bash
-python main.py                              # tương tác: chọn mode + nhập số lượng
-python main.py --scrape --check --target 10 # chạy đủ: scrape → check → webhook
-python main.py --check --target 5           # check queue có sẵn
-python main.py --no-tor                     # tắt Tor (mặc định đã tắt trong config)
+python main.py                              # interactive: pick a mode + enter the amount
+python main.py --scrape --check --target 10 # full run: scrape → check → webhook
+python main.py --check --target 5           # check the existing queue
+python main.py --no-tor                     # disable Tor (already off by default in config)
 ```
 
 ---
 
-## Cấu trúc & Workflow
+## Structure & Workflow
 
 ```text
 invite-gen-check/
 ├── main.py              # CLI · checker · pipeline
-├── config.json          # toàn bộ settings (chứa webhook secret!)
 ├── requirements.txt     # 6 dependencies
 ├── src/
-│   ├── paths.py         # mọi đường dẫn ở 1 chỗ duy nhất
+│   ├── paths.py         # every path defined in exactly one place
 │   ├── scraper.py       # Disboard scraper + JoinBrowser (Turnstile)
 │   ├── tor_manager.py   # Tor proxy pool (tor.exe 0.4.9.15)
 │   └── utils.py
 ├── tests/               # 30 tests · stdlib unittest
 └── data/
     ├── input/           # invites.txt (queue) · proxy.txt
-    ├── output/          # valid_invites.txt — invite codes 1/dòng
+    ├── output/          # valid_invites.txt — invite codes, one per line
     ├── data-core/       # checked_guild_ids.json · seen_servers.txt
     └── assets/tor/      # tor.exe · geoip · geoip6
 ```
@@ -129,31 +128,31 @@ invite-gen-check/
 ```mermaid
 flowchart LR
     A["Disboard listing<br/>GET /servers/tag/{tag}"] --> B["Cloudflare Turnstile<br/>patchright Chrome"]
-    B --> C["Trang join /server/join/{id}<br/>tự giải Turnstile → redirect"]
-    C --> D["Bắt discord.gg/{code}<br/>→ data/input/invites.txt"]
-    D --> E["Checker: Discord API v10<br/>aiohttp · tối đa 50 workers"]
+    B --> C["Join page /server/join/{id}<br/>auto-solves Turnstile → redirect"]
+    C --> D["Capture discord.gg/{code}<br/>→ data/input/invites.txt"]
+    D --> E["Checker: Discord API v10<br/>aiohttp · up to 50 workers"]
     E --> F{"Valid?"}
-    F -- "yes" --> G["Dedup theo guild ID<br/>checked_guild_ids.json"]
-    F -- "no" --> H["Đếm invalid/error<br/>error ở lại queue retry"]
-    G --> I["data/output/valid_invites.txt<br/>1 code/dòng"]
-    I --> J["Webhook: 1 tin + file codes"]
+    F -- "yes" --> G["Dedup by guild ID<br/>checked_guild_ids.json"]
+    F -- "no" --> H["Count invalid/error<br/>errors stay in queue for retry"]
+    G --> I["data/output/valid_invites.txt<br/>1 code per line"]
+    I --> J["Webhook: 1 message + codes file"]
 ```
 
 ---
 
-## Xử lý lỗi thường gặp
+## Troubleshooting
 
-**`ModuleNotFoundError: No module named 'curl_cffi'` (hoặc `patchright`, `playwright_captcha`)**
-→ Thiếu thư viện: `pip install -r requirements.txt`. Đủ 6 gói: aiohttp, aiohttp-socks, rich, curl-cffi, patchright, playwright-captcha.
+**`ModuleNotFoundError: No module named 'curl_cffi'` (or `patchright`, `playwright_captcha`)**
+→ Missing packages: `pip install -r requirements.txt`. Six in total: aiohttp, aiohttp-socks, rich, curl-cffi, patchright, playwright-captcha.
 
-**Proxy không được dùng / sai format**
-→ `data/input/proxy.txt`: mỗi dòng 1 proxy. Không ghi scheme thì mặc định `http://`. Hỗ trợ `http://`, `https://`, `socks4://`, `socks5://`, kèm auth: `http://user:pass@host:port`. Dòng `#` bị bỏ qua.
+**Proxies not being used / wrong format**
+→ `data/input/proxy.txt`: one proxy per line. Without a scheme, `http://` is assumed. Supports `http://`, `https://`, `socks4://`, `socks5://`, with auth: `http://user:pass@host:port`. Lines starting with `#` are skipped.
 
-**Webhook không gửi gì cả**
-→ Để `webhook.url` rỗng = tắt. Nếu đã điền mà không thấy tin: URL sai / webhook đã bị xoá trên Discord (rotate lại) — test nhanh bằng `python main.py --check --target 1` với 1 code trong queue. Tool **im lặng** khi url rỗng (by design).
+**Webhook sends nothing**
+→ An empty `webhook.url` disables it. If you filled it in and still get nothing: wrong URL / the webhook was deleted on Discord (rotate it) — quick test: `python main.py --check --target 1` with one code in the queue. The tool is **silent** when the URL is empty (by design).
 
-**Bị rate-limit / Cloudflare block liên tục**
-→ 429 đã được xử lý tự động theo `Retry-After`. Nếu vẫn nặng: giảm `scanner.concurrency` (50 → 10), tắt Tor khi scrape (`tor.enabled: false` — Cloudflare rất khắc nghiệt với Tor exit), hoặc thêm proxy chất lượng vào `proxy.txt`.
+**Constant rate-limits / Cloudflare blocks**
+→ 429s are handled automatically via `Retry-After`. If it stays heavy: lower `scanner.concurrency` (50 → 10), keep Tor off while scraping (`tor.enabled: false` — Cloudflare is harsh on Tor exits), or add quality proxies to `proxy.txt`.
 
 ---
 
@@ -167,12 +166,12 @@ flowchart LR
 
 ## License
 
-Dự án phát hành theo **[MIT License](LICENSE)**.
+Released under the **[MIT License](LICENSE)**.
 
 ```
 MIT License
 
-Copyright (c) 2026 noxofusion
+Copyright (c) 2026 Noxo
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
