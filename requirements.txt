@@ -1,0 +1,6 @@
+aiohttp>=3.9.0
+aiohttp-socks>=0.8.0
+rich>=13.7.0
+curl-cffi>=0.16.0
+patchright>=1.61.0
+playwright-captcha>=0.1.5

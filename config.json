@@ -1,0 +1,19 @@
+{
+    "tor": {
+        "enabled": false,
+        "proxy_amount": 10
+    },
+    "scraper": {
+        "concurrency": 10,
+        "max_browser_solves": 2
+    },
+    "scanner": {
+        "concurrency": 24,
+        "timeout": 10,
+        "retries": 3,
+        "target_invites": 0
+    },
+    "webhook": {
+        "url": ""
+    }
+}
