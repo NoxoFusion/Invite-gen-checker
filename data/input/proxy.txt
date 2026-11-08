@@ -1,0 +1,9 @@
+# Mỗi dòng 1 proxy. Hỗ trợ: http://, https://, socks4://, socks5://
+# Nếu không ghi scheme thì mặc định http://
+# Có thể kèm auth: http://user:pass@host:port
+# Dòng bắt đầu bằng # sẽ bị bỏ qua.
+#
+# Ví dụ:
+# http://1.2.3.4:8080
+# socks5://1.2.3.4:1080
+# user:pass@1.2.3.4:8080
